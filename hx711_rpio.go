@@ -72,21 +72,17 @@ func (hx711 *Hx711) waitForDataReady() error {
 	if level == rpio.Low {
 		return nil
 	}
-	const (
-		// since there's no way to intercept the edge without using sysfs and epoll, we need to
-		// read the GPIO memory bit multiple times until the edge presence is detected.
-		EDGE_TRY_LOOP = 1500
-
-		// delay between reading attempts
-		BUSY_LOOP_DELAY = 250 * time.Microsecond
-	)
-	for i := 0; i < EDGE_TRY_LOOP; i++ {
+	start := time.Now()
+	i := 0
+	for {
+		i++
 		if hx711.dataPin.EdgeDetected() {
 			return nil
 		}
-		time.Sleep(BUSY_LOOP_DELAY)
+		if (i%1500) == 0 && time.Since(start) > 1*time.Second {
+			break
+		}
 	}
-
 	return ErrTimeout
 }
 
